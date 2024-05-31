@@ -42,6 +42,27 @@ app.get("/kota", (req, res) => {
   })
 })
 
+app.get("/all", (req, res) => {
+  axios.get("https://jadwalsholat.org/adzan/ajax.row.php?id=").then(async response => {
+    const $ = cheerio.load(response.data)
+    const data = []
+    for (let i = 0; i < $("option").length; i++) {
+      const id = $("option").eq(i).attr("value")
+      const kota = $("option").eq(i).html()
+
+     const getWaktu =  await axios.get("https://jadwalsholat.org/ajax/ajax.daily1.php?id=" + id)
+      const $2 = cheerio.load(getWaktu.data)
+       const waktuShubuh = $2("tr.table_light").eq(0).find("td").eq(1)
+      data.push({
+        "kota" : kota,
+        "id" : id,
+        "waktuShubuh" : waktuShubuh.text(),
+        })
+    }                                   
+    res.json(data)
+  })
+}) 
+  
 app.listen(8000, () => {
   console.log("Server started on port 8000")
 })
