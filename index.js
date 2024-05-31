@@ -42,10 +42,16 @@ app.get("/kota", (req, res) => {
   })
 })
 
-app.get("/all", (req, res) => {
+app.get("/kota/all", (req, res) => {
   axios.get("https://jadwalsholat.org/adzan/ajax.row.php?id=").then(async response => {
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 10
+    const startIndex = (page - 1) * limit
+    const endIndex = startIndex + limit
+    
     const $ = cheerio.load(response.data)
     const data = []
+    
     for (let i = 0; i < $("option").length; i++) {
       const id = $("option").eq(i).attr("value")
       const kota = $("option").eq(i).html()
@@ -53,13 +59,29 @@ app.get("/all", (req, res) => {
      const getWaktu =  await axios.get("https://jadwalsholat.org/ajax/ajax.daily1.php?id=" + id)
       const $2 = cheerio.load(getWaktu.data)
        const waktuShubuh = $2("tr.table_light").eq(0).find("td").eq(1)
+      const waktuDzuhur = $2("tr.table_dark").eq(0).find("td").eq(1)
+      const waktuAshar = $2("tr.table_light").eq(1).find("td").eq(1)
+      const waktuMahgrib = $2("tr.table_dark").eq(1).find("td").eq(1)
+      const waktuIsya = $2("tr.table_light").eq(2).find("td").eq(1)
       data.push({
         "kota" : kota,
         "id" : id,
-        "waktuShubuh" : waktuShubuh.text(),
+        "waktusholat" : {
+          "shubuh" : waktuShubuh.text(),
+          "dzuhur" : waktuDzuhur.text(),
+          "ashar" : waktuAshar.text(),
+          "mahgrib" : waktuMahgrib.text(),
+          "isya" : waktuIsya.text()
+        }
         })
-    }                                   
-    res.json(data)
+      
+    }
+    const data2 = data.slice(startIndex, endIndex)
+    res.json({
+      "page" : page,
+      "limit" : limit,
+      "result" : data2,
+    })
   })
 }) 
   
